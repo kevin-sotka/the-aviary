@@ -264,6 +264,36 @@
     .vote-btn:hover { background: rgba(255,255,255,0.14); }
   }
 
+  .vote-btn.voted {
+    background: var(--accent, #7c6cff);
+    color: #0b0e1a;
+    border-color: transparent;
+    font-weight: 700;
+  }
+
+  @media (hover: hover) {
+    .vote-btn.voted:hover { background: var(--accent, #7c6cff); filter: brightness(1.05); }
+  }
+
+  .vote-btn.hiccup {
+    background: rgba(255,90,90,0.18);
+    border-color: rgba(255,120,120,0.4);
+  }
+
+  .discuss-link {
+    display: inline-block;
+    font-size: 0.72rem;
+    opacity: 0.45;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.18);
+    margin-top: 0.1rem;
+    align-self: flex-start;
+  }
+
+  @media (hover: hover) {
+    .discuss-link:hover { opacity: 0.7; }
+  }
+
   /* ---------- STANDINGS ---------- */
 
   .standings {
@@ -374,6 +404,54 @@
 
   .standings[hidden] { display: none; }
 
+  /* ---------- MUSIC TOGGLE ---------- */
+
+  .music-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 2rem;
+  }
+
+  .music-toggle {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: var(--paper);
+    border-radius: 999px;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    min-height: 40px;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+
+  .music-toggle:active { transform: scale(0.95); }
+
+  @media (hover: hover) {
+    .music-toggle:hover { background: rgba(255,255,255,0.12); }
+  }
+
+  .music-toggle.on {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.3);
+  }
+
+  .music-toggle.armed {
+    animation: armedPulse 2.2s ease-in-out infinite;
+  }
+
+  @keyframes armedPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.12); }
+    50% { box-shadow: 0 0 0 5px rgba(255,255,255,0.03); }
+  }
+
+  .music-hint {
+    font-size: 0.75rem;
+    opacity: 0.55;
+    font-style: italic;
+  }
+
   /* ---------- FOOTER ---------- */
 
   footer {
@@ -397,6 +475,12 @@
     border-bottom: 1px solid rgba(255,255,255,0.25);
   }
 
+  footer .music-credit {
+    font-size: 0.72rem;
+    opacity: 0.6;
+    margin-top: 0.5rem;
+  }
+
   /* ---------- FEATHER ---------- */
 
   .feather {
@@ -414,6 +498,7 @@
   @media (prefers-reduced-motion: reduce) {
     .hero-scroll-hint { animation: none; }
     .refresh-btn.spinning svg { animation: none; }
+    .music-toggle.armed { animation: none; }
   }
 </style>
 </head>
@@ -426,6 +511,7 @@
 const CONFIG = {
   owner: "kevin-sotka",
   repo: "the-aviary",
+  firebaseBase: "https://the-aviary-d694f-default-rtdb.firebaseio.com",
   games: [
     {
       slug: "murmuration",
@@ -486,13 +572,21 @@ const CONFIG = {
   </section>
 
   <p class="standings-note">
-    Votes are 👍 reactions on GitHub. One click, needs a GitHub login.
+    One tap, one vote. Change it any time.
   </p>
+
+  <div class="music-toggle-row">
+    <button class="music-toggle" id="musicToggle" type="button" aria-pressed="false">
+      <span id="musicToggleLabel">&#9834; music</span>
+    </button>
+    <span class="music-hint" id="musicHint" hidden>tap to resume</span>
+  </div>
 </main>
 
 <footer>
   <div>Built by the SodClaw Game Foundry</div>
   <div class="repo-links" id="repoLinks"></div>
+  <div class="music-credit">hub music: eonweaver, by Meatbag</div>
 </footer>
 
 <script>
@@ -988,6 +1082,7 @@ const CONFIG = {
      ========================================================= */
 
   var voteEls = {};
+  var voteBtnEls = {};
 
   function heartIcon(color) {
     return '<svg width="15" height="15" viewBox="0 0 24 24" fill="' + color + '" stroke="none">' +
@@ -1025,13 +1120,20 @@ const CONFIG = {
       voteBtn.type = "button";
       voteBtn.textContent = "Vote";
       voteBtn.addEventListener("click", function () {
-        var url = "https://github.com/" + CONFIG.owner + "/" + CONFIG.repo + "/issues/" + game.issue;
-        window.open(url, "_blank", "noopener");
+        castVote(game.slug, voteBtn);
       });
+      voteBtnEls[game.slug] = voteBtn;
 
       voteRow.appendChild(voteCount);
       voteRow.appendChild(voteBtn);
       body.appendChild(voteRow);
+
+      var discussLink = ce("a", "discuss-link");
+      discussLink.href = "https://github.com/" + CONFIG.owner + "/" + CONFIG.repo + "/issues/" + game.issue;
+      discussLink.target = "_blank";
+      discussLink.rel = "noopener";
+      discussLink.textContent = "discuss";
+      body.appendChild(discussLink);
 
       var actions = ce("div", "card-actions");
       var playBtn = ce("a", "play-btn");
@@ -1062,15 +1164,114 @@ const CONFIG = {
   buildCards();
 
   /* =========================================================
-     VOTING: fetch reaction counts from GitHub issues
+     VOTING: one-tap Firebase Realtime Database tallies
      ========================================================= */
 
   var lastFetch = 0;
   var COOLDOWN_MS = 30000;
   var latestCounts = {};
+  var VOTE_KEY = "aviary-vote";
 
   function formatCount(n) {
     return typeof n === "number" && isFinite(n) ? String(n) : "~";
+  }
+
+  function getStoredVote() {
+    try {
+      return window.localStorage.getItem(VOTE_KEY);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setStoredVote(slug) {
+    try {
+      if (slug) {
+        window.localStorage.setItem(VOTE_KEY, slug);
+      } else {
+        window.localStorage.removeItem(VOTE_KEY);
+      }
+    } catch (e) {
+      // localStorage unavailable, vote still works for this page view
+    }
+  }
+
+  function renderVoteButtons() {
+    var voted = getStoredVote();
+    CONFIG.games.forEach(function (game) {
+      var btn = voteBtnEls[game.slug];
+      if (!btn) return;
+      if (game.slug === voted) {
+        btn.textContent = "VOTED ✓";
+        btn.classList.add("voted");
+      } else {
+        btn.textContent = "Vote";
+        btn.classList.remove("voted");
+      }
+    });
+  }
+
+  function showHiccup(btn) {
+    btn.classList.add("hiccup");
+    var original = btn.textContent;
+    btn.textContent = "connection hiccup, try again";
+    setTimeout(function () {
+      btn.classList.remove("hiccup");
+      renderVoteButtons();
+    }, 1800);
+  }
+
+  function firebaseIncrement(slug, amount) {
+    var url = CONFIG.firebaseBase + "/votes/" + encodeURIComponent(slug) + ".json";
+    return fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ".sv": { "increment": amount } })
+    }).then(function (res) {
+      if (!res.ok) throw new Error("Firebase responded with " + res.status);
+      return res.json();
+    });
+  }
+
+  var voteInFlight = false;
+
+  function castVote(slug, btn) {
+    if (voteInFlight) return;
+    var previous = getStoredVote();
+
+    var ops = [];
+    if (previous === slug) {
+      // Un-vote: remove this vote.
+      ops.push({ slug: slug, delta: -1 });
+      setStoredVote(null);
+      if (typeof latestCounts[slug] === "number") latestCounts[slug] = Math.max(0, latestCounts[slug] - 1);
+    } else {
+      if (previous) {
+        ops.push({ slug: previous, delta: -1 });
+        if (typeof latestCounts[previous] === "number") latestCounts[previous] = Math.max(0, latestCounts[previous] - 1);
+      }
+      ops.push({ slug: slug, delta: 1 });
+      if (typeof latestCounts[slug] === "number") latestCounts[slug] = latestCounts[slug] + 1;
+      else latestCounts[slug] = 1;
+      setStoredVote(slug);
+    }
+
+    // Optimistic UI update, then reconcile.
+    renderCounts();
+    renderStandings();
+    renderVoteButtons();
+
+    voteInFlight = true;
+    Promise.all(ops.map(function (op) { return firebaseIncrement(op.slug, op.delta); }))
+      .then(function () {
+        return fetchTallies(false);
+      })
+      .catch(function () {
+        showHiccup(btn);
+      })
+      .then(function () {
+        voteInFlight = false;
+      });
   }
 
   function renderCounts() {
@@ -1148,40 +1349,29 @@ const CONFIG = {
   function fetchTallies(isManual) {
     var now = Date.now();
     if (isManual && now - lastFetch < COOLDOWN_MS) {
-      return;
+      return Promise.resolve();
     }
     lastFetch = now;
     setRefreshState(true);
 
-    var url = "https://api.github.com/repos/" + CONFIG.owner + "/" + CONFIG.repo +
-      "/issues?state=open&per_page=10";
+    var url = CONFIG.firebaseBase + "/votes.json";
 
-    fetch(url, {
-      headers: { "Accept": "application/vnd.github+json" }
-    })
+    return fetch(url)
       .then(function (res) {
-        if (!res.ok) throw new Error("GitHub API responded with " + res.status);
+        if (!res.ok) throw new Error("Firebase responded with " + res.status);
         return res.json();
       })
-      .then(function (issues) {
-        if (!Array.isArray(issues)) throw new Error("Unexpected response shape");
-        var byNumber = {};
-        issues.forEach(function (issue) {
-          if (issue && typeof issue.number === "number") {
-            var reactions = issue.reactions || {};
-            byNumber[issue.number] = typeof reactions["+1"] === "number" ? reactions["+1"] : 0;
-          }
-        });
+      .then(function (votes) {
+        var data = votes && typeof votes === "object" ? votes : {};
         CONFIG.games.forEach(function (game) {
-          if (Object.prototype.hasOwnProperty.call(byNumber, game.issue)) {
-            latestCounts[game.slug] = byNumber[game.issue];
-          }
+          var v = data[game.slug];
+          latestCounts[game.slug] = typeof v === "number" && isFinite(v) ? v : 0;
         });
         renderCounts();
         renderStandings();
       })
       .catch(function () {
-        // Graceful fallback. Keep whatever we have (or ~), hide standings if nothing resolved.
+        // Graceful fallback. Keep whatever we have (or ~), no crashes, no console noise.
         renderCounts();
         renderStandings();
       })
@@ -1197,6 +1387,7 @@ const CONFIG = {
   // Initial render (all tildes) then kick off the one fetch.
   renderCounts();
   renderStandings();
+  renderVoteButtons();
   fetchTallies(false);
 
   /* =========================================================
@@ -1254,6 +1445,132 @@ const CONFIG = {
     }, delay);
   }
   scheduleFeathers();
+
+  /* =========================================================
+     OPT-IN HUB MUSIC. Never autoplays, even if stored on.
+     ========================================================= */
+
+  (function musicToggle() {
+    var MUSIC_KEY = "aviary-music";
+    var MUSIC_VOLUME = 0.55;
+    var FADE_IN_MS = 1500;
+    var FADE_OUT_MS = 800;
+
+    var btn = qs("#musicToggle");
+    var label = qs("#musicToggleLabel");
+    var hint = qs("#musicHint");
+    if (!btn || !label) return;
+
+    var audio = null;
+    var fadeTimer = null;
+    var playing = false;
+
+    function getStoredWantsOn() {
+      try {
+        return window.localStorage.getItem(MUSIC_KEY) === "on";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function setStoredWantsOn(on) {
+      try {
+        window.localStorage.setItem(MUSIC_KEY, on ? "on" : "off");
+      } catch (e) {
+        // localStorage unavailable, choice just won't persist
+      }
+    }
+
+    function ensureAudio() {
+      if (audio) return audio;
+      audio = new Audio("assets/eonweaver-loop.mp3");
+      audio.loop = true;
+      audio.volume = 0;
+      return audio;
+    }
+
+    function fade(target, duration, onDone) {
+      if (fadeTimer) {
+        clearInterval(fadeTimer);
+        fadeTimer = null;
+      }
+      var el = ensureAudio();
+      var start = el.volume;
+      var startTime = Date.now();
+      fadeTimer = setInterval(function () {
+        var t = clamp((Date.now() - startTime) / duration, 0, 1);
+        el.volume = lerp(start, target, t);
+        if (t >= 1) {
+          clearInterval(fadeTimer);
+          fadeTimer = null;
+          if (onDone) onDone();
+        }
+      }, 40);
+    }
+
+    function updateButton() {
+      if (playing) {
+        btn.classList.add("on");
+        btn.classList.remove("armed");
+        btn.setAttribute("aria-pressed", "true");
+        label.textContent = "♪ playing";
+        if (hint) hint.hidden = true;
+      } else {
+        btn.classList.remove("on");
+        btn.setAttribute("aria-pressed", "false");
+        label.textContent = "♪ music";
+        if (getStoredWantsOn()) {
+          btn.classList.add("armed");
+          if (hint) hint.hidden = false;
+        } else {
+          btn.classList.remove("armed");
+          if (hint) hint.hidden = true;
+        }
+      }
+    }
+
+    function turnOn() {
+      var el = ensureAudio();
+      el.volume = 0;
+      var playPromise = el.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(function () {
+          // Autoplay blocked or file missing. Stay in armed/off state.
+          playing = false;
+          setStoredWantsOn(true);
+          updateButton();
+        });
+      }
+      playing = true;
+      setStoredWantsOn(true);
+      fade(MUSIC_VOLUME, FADE_IN_MS);
+      updateButton();
+    }
+
+    function turnOff() {
+      playing = false;
+      setStoredWantsOn(false);
+      if (audio) {
+        fade(0, FADE_OUT_MS, function () {
+          if (audio) audio.pause();
+        });
+      }
+      updateButton();
+    }
+
+    btn.addEventListener("click", function () {
+      if (playing) {
+        turnOff();
+      } else {
+        turnOn();
+      }
+    });
+
+    // Never autoplay on load, even if a prior choice was "on".
+    // Just show the armed hint so the visitor knows one tap resumes it.
+    playing = false;
+    updateButton();
+  })();
 
 })();
 </script>
