@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Aviary. Three bird games, one favorite.</title>
+<meta name="description" content="The Aviary: three browser bird games. Play Murmuration, Dawn Chorus, and Halcyon, then vote for your favorite.">
+<style>
+  :root {
+    --ink: #0b0e1a;
+    --paper: #fdf9f2;
+    --murmuration: #7c6cff;
+    --dawnchorus: #ffb347;
+    --halcyon: #2dd4bf;
+    --card-bg: #14172a;
+    --card-bg-2: #1b1f38;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .display {
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  a { color: inherit; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ---------- HERO ---------- */
+
+  .hero {
+    position: relative;
+    width: 100%;
+    min-height: 62vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .hero canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 6rem 1.25rem 3.5rem;
+    max-width: 900px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.6rem, 9vw, 5.5rem);
+    letter-spacing: 0.04em;
+    margin: 0 0 0.6rem;
+    text-shadow: 0 4px 30px rgba(0,0,0,0.55), 0 0 60px rgba(180,160,255,0.25);
+    font-weight: 400;
+  }
+
+  .hero p.subtitle {
+    font-size: clamp(1rem, 2.6vw, 1.35rem);
+    opacity: 0.88;
+    margin: 0;
+    letter-spacing: 0.01em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 1.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 6px); }
+  }
+
+  /* ---------- MAIN LAYOUT ---------- */
+
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 4rem;
+  }
+
+  .section-label {
+    text-align: center;
+    font-size: 0.78rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    margin: 1rem 0 2rem;
+  }
+
+  /* ---------- CARDS ---------- */
+
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  @media (min-width: 860px) {
+    .cards { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .card {
+    position: relative;
+    background: linear-gradient(160deg, var(--card-bg-2), var(--card-bg));
+    border-radius: 22px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .card:active {
+    transform: scale(0.98) translateY(2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+
+  @media (hover: hover) {
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 22px 50px rgba(0,0,0,0.45);
+    }
+  }
+
+  .card-canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #06070d;
+  }
+
+  .card-canvas-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .card-body {
+    padding: 1.25rem 1.4rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    flex: 1;
+  }
+
+  .card-title {
+    font-size: 1.6rem;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+
+  .card-tagline {
+    font-size: 0.94rem;
+    line-height: 1.5;
+    opacity: 0.82;
+    margin: 0;
+    flex: 1;
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .play-btn {
+    flex: 1 1 auto;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    padding: 0.85rem 1.2rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    border: none;
+    color: #0b0e1a;
+    background: var(--accent, #7c6cff);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    transition: transform 0.12s ease, filter 0.12s ease;
+    min-height: 48px;
+    line-height: 1.2;
+  }
+
+  .play-btn:active {
+    transform: scale(0.96);
+    filter: brightness(0.95);
+  }
+
+  .vote-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-top: 0.35rem;
+  }
+
+  .vote-count {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+    opacity: 0.9;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vote-count svg { display: block; }
+
+  .vote-btn {
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    color: var(--paper);
+    border: 1px solid rgba(255,255,255,0.18);
+    min-height: 44px;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+
+  .vote-btn:active {
+    transform: scale(0.95);
+    background: rgba(255,255,255,0.16);
+  }
+
+  @media (hover: hover) {
+    .vote-btn:hover { background: rgba(255,255,255,0.14); }
+  }
+
+  /* ---------- STANDINGS ---------- */
+
+  .standings {
+    margin: 3rem auto 0;
+    max-width: 720px;
+  }
+
+  .standings-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .standings-head h2 {
+    font-size: 1.15rem;
+    margin: 0;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    opacity: 0.9;
+  }
+
+  .refresh-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: var(--paper);
+    border-radius: 999px;
+    padding: 0.5rem 0.95rem;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 40px;
+  }
+
+  .refresh-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .refresh-btn svg {
+    transition: transform 0.4s ease;
+  }
+
+  .refresh-btn.spinning svg {
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .standings-bar {
+    display: flex;
+    width: 100%;
+    height: 26px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .standings-seg {
+    height: 100%;
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    min-width: 2px;
+  }
+
+  .standings-legend {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    opacity: 0.9;
+  }
+
+  .standings-legend .item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex: none;
+  }
+
+  .crown {
+    font-size: 0.9em;
+    margin-left: 0.15em;
+  }
+
+  .standings-note {
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.55;
+    margin-top: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .standings[hidden] { display: none; }
+
+  /* ---------- FOOTER ---------- */
+
+  footer {
+    text-align: center;
+    padding: 3rem 1rem 2.5rem;
+    font-size: 0.82rem;
+    opacity: 0.55;
+    line-height: 1.9;
+  }
+
+  footer .repo-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+  }
+
+  footer a {
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+  }
+
+  /* ---------- FEATHER ---------- */
+
+  .feather {
+    position: fixed;
+    top: -40px;
+    left: 0;
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.85;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-scroll-hint { animation: none; }
+    .refresh-btn.spinning svg { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+     CONFIG. Patch this block at deploy time.
+     ========================================================= -->
+<script>
+const CONFIG = {
+  owner: "OWNER_PLACEHOLDER",
+  repo: "the-aviary",
+  games: [
+    {
+      slug: "murmuration",
+      title: "Murmuration",
+      tagline: "Draw the sky. A flock of three hundred starlings follows your finger through rings of dusk light.",
+      playUrl: "MURMURATION_URL_PLACEHOLDER",
+      issue: 1,
+      accent: "#7c6cff"
+    },
+    {
+      slug: "dawn-chorus",
+      title: "Dawn Chorus",
+      tagline: "Echo the birdsong, branch by branch, and wake a watercolor forest into a sunrise symphony.",
+      playUrl: "DAWNCHORUS_URL_PLACEHOLDER",
+      issue: 2,
+      accent: "#ffb347"
+    },
+    {
+      slug: "halcyon",
+      title: "Halcyon",
+      tagline: "The river bends the light. Read the refraction and make the kingfisher's perfect dive.",
+      playUrl: "HALCYON_URL_PLACEHOLDER",
+      issue: 3,
+      accent: "#2dd4bf"
+    }
+  ]
+};
+</script>
+
+<section class="hero">
+  <canvas id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <h1 class="display">THE AVIARY</h1>
+    <p class="subtitle">Three bird games. One favorite. You decide.</p>
+  </div>
+  <div class="hero-scroll-hint">scroll to play</div>
+</section>
+
+<main>
+  <p class="section-label">Choose your bird</p>
+
+  <div class="cards" id="cardsRoot"></div>
+
+  <section class="standings" id="standings">
+    <div class="standings-head">
+      <h2 class="display">Current standings</h2>
+      <button class="refresh-btn" id="refreshBtn" type="button" aria-label="Refresh vote tallies">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span id="refreshLabel">Refresh</span>
+      </button>
+    </div>
+    <div class="standings-bar" id="standingsBar"></div>
+    <div class="standings-legend" id="standingsLegend"></div>
+  </section>
+
+  <p class="standings-note">
+    Votes are 👍 reactions on GitHub. One click, needs a GitHub login.
+  </p>
+</main>
+
+<footer>
+  <div>Built by the SodClaw Game Foundry</div>
+  <div class="repo-links" id="repoLinks"></div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =========================================================
+     UTIL
+     ========================================================= */
+
+  function qs(sel, root) { return (root || document).querySelector(sel); }
+  function ce(tag, cls) {
+    var el = document.createElement(tag);
+    if (cls) el.className = cls;
+    return el;
+  }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  var prefersReducedMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* =========================================================
+     HERO CANVAS. Night to dawn gradient with drifting boids.
+     ========================================================= */
+
+  (function heroScene() {
+    var canvas = qs("#heroCanvas");
+    var ctx = canvas.getContext("2d");
+    var w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var pointer = { x: null, y: null, active: false };
+    var startTime = Date.now();
+    var cycleMs = 60000;
+
+    function resize() {
+      var rect = canvas.parentElement.getBoundingClientRect();
+      w = rect.width;
+      h = rect.height;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    var NUM_BIRDS = 26;
+    var birds = [];
+    function initBirds() {
+      birds = [];
+      for (var i = 0; i < NUM_BIRDS; i++) {
+        birds.push({
+          x: Math.random() * w,
+          y: Math.random() * h * 0.7,
+          vx: 0.25 + Math.random() * 0.5,
+          vy: (Math.random() - 0.5) * 0.08,
+          wing: Math.random() * Math.PI * 2,
+          wingSpeed: 0.12 + Math.random() * 0.08,
+          size: 5 + Math.random() * 8,
+          depth: 0.4 + Math.random() * 0.6
+        });
+      }
+    }
+
+    function skyColors(t) {
+      // t in [0,1): 0 = deep night, 0.5 = dawn, 1 = back to night
+      var stops;
+      var phase = t < 0.5 ? t * 2 : (1 - t) * 2;
+      var night = [10, 12, 26];
+      var dawnTop = [255, 176, 140];
+      var dawnBottom = [120, 90, 160];
+      var top = [
+        lerp(night[0], dawnTop[0], phase),
+        lerp(night[1], dawnTop[1], phase),
+        lerp(night[2], dawnTop[2], phase)
+      ];
+      var bottom = [
+        lerp(night[0] + 6, dawnBottom[0], phase),
+        lerp(night[1] + 4, dawnBottom[1], phase),
+        lerp(night[2] + 20, dawnBottom[2], phase)
+      ];
+      return { top: top, bottom: bottom, phase: phase };
+    }
+
+    function rgb(c) { return "rgb(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + ")"; }
+
+    var stars = [];
+    function initStars() {
+      stars = [];
+      for (var i = 0; i < 70; i++) {
+        stars.push({
+          x: Math.random(),
+          y: Math.random() * 0.6,
+          r: Math.random() * 1.4 + 0.3,
+          tw: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    function draw() {
+      var elapsed = Date.now() - startTime;
+      var t = (elapsed % cycleMs) / cycleMs;
+      var sky = skyColors(t);
+
+      var grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, rgb(sky.top));
+      grad.addColorStop(1, rgb(sky.bottom));
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // stars, fade out as it gets brighter
+      var starAlpha = clamp(1 - sky.phase * 1.4, 0, 1);
+      if (starAlpha > 0.01) {
+        ctx.save();
+        ctx.globalAlpha = starAlpha;
+        ctx.fillStyle = "#fff";
+        for (var i = 0; i < stars.length; i++) {
+          var s = stars[i];
+          var tw = 0.6 + 0.4 * Math.sin(elapsed * 0.001 + s.tw);
+          ctx.globalAlpha = starAlpha * tw;
+          ctx.beginPath();
+          ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // sun/moon glow low, near dawn phase peak
+      var glowAlpha = clamp(sky.phase, 0, 1) * 0.5;
+      if (glowAlpha > 0.02) {
+        var gx = w * 0.5;
+        var gy = h * (1.05 - sky.phase * 0.3);
+        var rg = ctx.createRadialGradient(gx, gy, 0, gx, gy, w * 0.35);
+        rg.addColorStop(0, "rgba(255,214,150," + glowAlpha + ")");
+        rg.addColorStop(1, "rgba(255,214,150,0)");
+        ctx.fillStyle = rg;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // birds
+      ctx.save();
+      for (var b = 0; b < birds.length; b++) {
+        var bird = birds[b];
+
+        var tx = bird.vx, ty = bird.vy;
+        if (pointer.active && pointer.x !== null) {
+          var dx = pointer.x - bird.x;
+          var dy = pointer.y - bird.y;
+          var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          if (dist < 220) {
+                        var push = (1 - dist / 220) * 0.35;
+            tx -= (dx / dist) * push;
+            ty -= (dy / dist) * push;
+          }
+        }
+        bird.vx = lerp(bird.vx, tx, 0.02);
+        bird.vy = lerp(bird.vy, ty, 0.02);
+
+        bird.x += bird.vx * bird.depth;
+        bird.y += bird.vy * bird.depth;
+        bird.wing += bird.wingSpeed;
+
+        if (bird.x > w + 20) { bird.x = -20; bird.y = Math.random() * h * 0.7; }
+        if (bird.x < -20) { bird.x = w + 20; }
+        if (bird.y < 0) bird.y = 0;
+        if (bird.y > h * 0.85) bird.y = h * 0.85;
+
+        var flap = Math.sin(bird.wing) * 0.5;
+        var sz = bird.size * bird.depth;
+        ctx.globalAlpha = 0.55 * bird.depth + 0.15;
+        ctx.strokeStyle = "rgba(10,10,20,0.9)";
+        ctx.lineWidth = Math.max(1, sz * 0.16);
+        ctx.beginPath();
+        ctx.moveTo(bird.x - sz, bird.y + flap * sz * 0.6);
+        ctx.quadraticCurveTo(bird.x, bird.y - sz * 0.5, bird.x + sz, bird.y + flap * sz * 0.6);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      requestAnimationFrame(draw);
+    }
+
+    function onPointerMove(e) {
+      var rect = canvas.getBoundingClientRect();
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      pointer.x = clientX - rect.left;
+      pointer.y = clientY - rect.top;
+      pointer.active = true;
+    }
+    function onPointerLeave() { pointer.active = false; }
+
+    window.addEventListener("resize", function () {
+      resize();
+    });
+    canvas.parentElement.addEventListener("mousemove", onPointerMove, { passive: true });
+    canvas.parentElement.addEventListener("touchmove", onPointerMove, { passive: true });
+    canvas.parentElement.addEventListener("mouseleave", onPointerLeave, { passive: true });
+    canvas.parentElement.addEventListener("touchend", onPointerLeave, { passive: true });
+
+    resize();
+    initStars();
+    initBirds();
+    requestAnimationFrame(draw);
+  })();
+
+  /* =========================================================
+     CARD VIGNETTES
+     ========================================================= */
+
+  function makeCardCanvas(wrap) {
+    var canvas = ce("canvas");
+    wrap.appendChild(canvas);
+    var ctx = canvas.getContext("2d");
+    var w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    function resize() {
+      var rect = wrap.getBoundingClientRect();
+      w = rect.width || 320;
+      h = rect.height || 180;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+    return { canvas: canvas, ctx: ctx, getSize: function () { return { w: w, h: h }; }, resize: resize };
+  }
+
+  // --- Murmuration vignette: tiny boid wisp on indigo dusk ---
+  function sceneMurmuration(wrap) {
+    var handle = makeCardCanvas(wrap);
+    var ctx = handle.ctx;
+    var boids = [];
+    var N = 22;
+    var t0 = Date.now();
+
+    function init() {
+      var s = handle.getSize();
+      boids = [];
+      var cx = s.w * 0.5, cy = s.h * 0.5;
+      for (var i = 0; i < N; i++) {
+        var ang = (i / N) * Math.PI * 2;
+        boids.push({
+          x: cx + Math.cos(ang) * 20,
+          y: cy + Math.sin(ang) * 20,
+          a: ang,
+          r: 14 + Math.random() * 10,
+          speed: 0.6 + Math.random() * 0.4,
+          wobble: Math.random() * Math.PI * 2
+        });
+      }
+    }
+    init();
+    window.addEventListener("resize", init);
+
+    function frame() {
+      var s = handle.getSize();
+      var w = s.w, h = s.h;
+      var elapsed = (Date.now() - t0) * 0.001;
+
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#241f45");
+      g.addColorStop(1, "#0d0b22");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // faint rings of dusk light
+      ctx.save();
+      ctx.globalAlpha = 0.16;
+      for (var r = 0; r < 3; r++) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#7c6cff";
+        ctx.lineWidth = 1.5;
+        var rad = 24 + r * 26 + Math.sin(elapsed * 0.5 + r) * 4;
+        ctx.arc(w * 0.5, h * 0.55, rad, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      var cx = w * 0.5 + Math.sin(elapsed * 0.3) * w * 0.08;
+      var cy = h * 0.55 + Math.cos(elapsed * 0.25) * h * 0.06;
+
+      ctx.save();
+      ctx.fillStyle = "#c9c3ff";
+      for (var i = 0; i < boids.length; i++) {
+        var b = boids[i];
+        b.a += 0.012 * b.speed * (i % 2 === 0 ? 1 : 1.15);
+        var wob = Math.sin(elapsed * 0.8 + b.wobble) * 5;
+        var x = cx + Math.cos(b.a) * (b.r + wob);
+        var y = cy + Math.sin(b.a) * (b.r + wob) * 0.6;
+        ctx.globalAlpha = 0.75;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 2.2, 1.2, b.a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // --- Dawn Chorus vignette: sun cresting silhouette trees, rising motes ---
+  function sceneDawnChorus(wrap) {
+    var handle = makeCardCanvas(wrap);
+    var ctx = handle.ctx;
+    var t0 = Date.now();
+    var motes = [];
+    function init() {
+      var s = handle.getSize();
+      motes = [];
+      for (var i = 0; i < 18; i++) {
+        motes.push({
+          x: Math.random() * s.w,
+          y: s.h + Math.random() * s.h,
+          speed: 6 + Math.random() * 10,
+          drift: Math.random() * Math.PI * 2,
+          size: 1 + Math.random() * 2
+        });
+      }
+    }
+    init();
+    window.addEventListener("resize", init);
+
+    function trees(w, h, baseY) {
+      ctx.fillStyle = "#241a10";
+      var count = 7;
+      for (var i = 0; i <= count; i++) {
+        var x = (i / count) * w;
+        var th = h * (0.28 + 0.15 * Math.sin(i * 1.7));
+        ctx.beginPath();
+        ctx.moveTo(x, baseY);
+        ctx.lineTo(x + w / count * 0.5, baseY - th);
+        ctx.lineTo(x + w / count, baseY);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    function frame() {
+      var s = handle.getSize();
+      var w = s.w, h = s.h;
+      var elapsed = (Date.now() - t0) * 0.001;
+      var rise = clamp(0.3 + Math.sin(elapsed * 0.15) * 0.25, 0.05, 0.65);
+
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#3a2350");
+      g.addColorStop(0.5, "#ff8a5b");
+      g.addColorStop(1, "#ffd27a");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // sun
+      var sunY = h * (1.05 - rise);
+      var sunGrad = ctx.createRadialGradient(w * 0.5, sunY, 0, w * 0.5, sunY, w * 0.28);
+      sunGrad.addColorStop(0, "rgba(255,240,200,0.95)");
+      sunGrad.addColorStop(1, "rgba(255,240,200,0)");
+      ctx.fillStyle = sunGrad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#fff3d0";
+      ctx.beginPath();
+      ctx.arc(w * 0.5, sunY, w * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+
+      trees(w, h, h * 0.82);
+
+      // rising light motes
+      ctx.save();
+      ctx.fillStyle = "#fff3c4";
+      for (var i = 0; i < motes.length; i++) {
+        var m = motes[i];
+        m.y -= m.speed * 0.02;
+        var x = m.x + Math.sin(elapsed + m.drift) * 6;
+        if (m.y < -10) { m.y = h + 10; m.x = Math.random() * w; }
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(elapsed * 2 + m.drift);
+        ctx.beginPath();
+        ctx.arc(x, m.y, m.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // --- Halcyon vignette: teal water band, ripple rings, diving speck ---
+  function sceneHalcyon(wrap) {
+    var handle = makeCardCanvas(wrap);
+    var ctx = handle.ctx;
+    var t0 = Date.now();
+    var ripples = [];
+    var diveT = 0;
+
+    function spawnRipple(x, y) {
+      ripples.push({ x: x, y: y, r: 2, alpha: 0.5 });
+    }
+
+    function frame() {
+      var s = handle.getSize();
+      var w = s.w, h = s.h;
+      var elapsed = (Date.now() - t0) * 0.001;
+
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#0d3b3f");
+      g.addColorStop(0.55, "#0f5a5e");
+      g.addColorStop(1, "#123f4a");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      var waterY = h * 0.62;
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = "#7fe8dc";
+      ctx.lineWidth = 1;
+      for (var i = 0; i < 4; i++) {
+        ctx.beginPath();
+        for (var x = 0; x <= w; x += 6) {
+          var y = waterY + i * 14 + Math.sin(x * 0.05 + elapsed * 1.4 + i) * 3;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // dive cycle
+      var cycle = 3.2;
+      var phase = (elapsed % cycle) / cycle;
+      diveT = phase;
+      var diveX = w * 0.5;
+      var startY = h * 0.18;
+      var enterY = waterY;
+      var speckY, visible = true;
+      if (phase < 0.55) {
+        var p = phase / 0.55;
+        speckY = lerp(startY, enterY, p * p);
+      } else if (phase < 0.62) {
+        speckY = enterY;
+        var rp = (phase - 0.55) / 0.07;
+        if (rp < 1 && rp > 0 && Math.floor(rp * 60) % 6 === 0) {
+          spawnRipple(diveX, enterY);
+        }
+      } else if (phase < 0.9) {
+        visible = false;
+      } else {
+        var up = (phase - 0.9) / 0.1;
+        speckY = lerp(enterY, startY, up);
+      }
+
+      // ripples
+      ctx.save();
+      for (var r = ripples.length - 1; r >= 0; r--) {
+        var rp2 = ripples[r];
+        rp2.r += 0.9;
+        rp2.alpha *= 0.965;
+        if (rp2.alpha < 0.02) { ripples.splice(r, 1); continue; }
+        ctx.globalAlpha = rp2.alpha;
+        ctx.strokeStyle = "#cfffef";
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.ellipse(rp2.x, rp2.y, rp2.r * 1.6, rp2.r * 0.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      if (visible) {
+        ctx.save();
+        ctx.fillStyle = "#0b1a1c";
+        ctx.beginPath();
+        ctx.ellipse(diveX, speckY, 3.4, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ff9d5c";
+        ctx.beginPath();
+        ctx.ellipse(diveX + 3, speckY, 1.4, 0.9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  var sceneMap = {
+    "murmuration": sceneMurmuration,
+    "dawn-chorus": sceneDawnChorus,
+    "halcyon": sceneHalcyon
+  };
+
+  /* =========================================================
+     BUILD CARDS
+     ========================================================= */
+
+  var voteEls = {};
+
+  function heartIcon(color) {
+    return '<svg width="15" height="15" viewBox="0 0 24 24" fill="' + color + '" stroke="none">' +
+      '<path d="M12 21s-6.7-4.35-9.3-8.2C1 10.1 1.6 6.8 4.4 5.3c2.2-1.2 4.6-.5 6 1.3l1.6 2 1.6-2c1.4-1.8 3.8-2.5 6-1.3 2.8 1.5 3.4 4.8 1.7 7.5C18.7 16.65 12 21 12 21z"/>' +
+      '</svg>';
+  }
+
+  function buildCards() {
+    var root = qs("#cardsRoot");
+    var repoLinks = qs("#repoLinks");
+
+    CONFIG.games.forEach(function (game, idx) {
+      var card = ce("div", "card");
+      card.style.setProperty("--accent", game.accent);
+
+      var canvasWrap = ce("div", "card-canvas-wrap");
+      card.appendChild(canvasWrap);
+
+      var body = ce("div", "card-body");
+
+      var title = ce("h3", "card-title display");
+      title.textContent = game.title;
+      body.appendChild(title);
+
+      var tagline = ce("p", "card-tagline");
+      tagline.textContent = game.tagline;
+      body.appendChild(tagline);
+
+      var voteRow = ce("div", "vote-row");
+      var voteCount = ce("div", "vote-count");
+      voteCount.innerHTML = heartIcon(game.accent) + ' <span data-count>~</span>';
+      voteEls[game.slug] = voteCount.querySelector("[data-count]");
+
+      var voteBtn = ce("button", "vote-btn");
+      voteBtn.type = "button";
+      voteBtn.textContent = "Vote";
+      voteBtn.addEventListener("click", function () {
+        var url = "https://github.com/" + CONFIG.owner + "/" + CONFIG.repo + "/issues/" + game.issue;
+        window.open(url, "_blank", "noopener");
+      });
+
+      voteRow.appendChild(voteCount);
+      voteRow.appendChild(voteBtn);
+      body.appendChild(voteRow);
+
+      var actions = ce("div", "card-actions");
+      var playBtn = ce("a", "play-btn");
+      playBtn.href = game.playUrl;
+      playBtn.target = "_blank";
+      playBtn.rel = "noopener";
+      playBtn.textContent = "Play " + game.title;
+      actions.appendChild(playBtn);
+      body.appendChild(actions);
+
+      card.appendChild(body);
+      root.appendChild(card);
+
+      var sceneFn = sceneMap[game.slug];
+      if (sceneFn) {
+        try { sceneFn(canvasWrap); } catch (e) { /* keep going even if a scene fails */ }
+      }
+
+      var repoLink = ce("a");
+      repoLink.href = "https://github.com/" + CONFIG.owner + "/" + game.slug;
+      repoLink.target = "_blank";
+      repoLink.rel = "noopener";
+      repoLink.textContent = game.title;
+      repoLinks.appendChild(repoLink);
+    });
+  }
+
+  buildCards();
+
+  /* =========================================================
+     VOTING: fetch reaction counts from GitHub issues
+     ========================================================= */
+
+  var lastFetch = 0;
+  var COOLDOWN_MS = 30000;
+  var latestCounts = {};
+
+  function formatCount(n) {
+    return typeof n === "number" && isFinite(n) ? String(n) : "~";
+  }
+
+  function renderCounts() {
+    CONFIG.games.forEach(function (game) {
+      var el = voteEls[game.slug];
+      if (!el) return;
+      var c = latestCounts[game.slug];
+      el.textContent = formatCount(c);
+    });
+  }
+
+  function renderStandings() {
+    var wrap = qs("#standings");
+    var bar = qs("#standingsBar");
+    var legend = qs("#standingsLegend");
+    bar.innerHTML = "";
+    legend.innerHTML = "";
+
+    var entries = CONFIG.games
+      .map(function (g) { return { game: g, count: latestCounts[g.slug] }; })
+      .filter(function (e) { return typeof e.count === "number" && isFinite(e.count); });
+
+    if (entries.length === 0) {
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+
+    var total = entries.reduce(function (sum, e) { return sum + e.count; }, 0);
+    var maxCount = entries.reduce(function (m, e) { return Math.max(m, e.count); }, 0);
+    var leaderSlug = null;
+    if (total > 0) {
+      var leaders = entries.filter(function (e) { return e.count === maxCount; });
+      if (leaders.length === 1) leaderSlug = leaders[0].game.slug;
+    }
+
+    entries.forEach(function (e) {
+      var share = total > 0 ? e.count / total : 1 / entries.length;
+      var seg = ce("div", "standings-seg");
+      seg.style.width = (share * 100) + "%";
+      seg.style.background = e.game.accent;
+      seg.title = e.game.title + ": " + e.count + " votes";
+      bar.appendChild(seg);
+
+      var item = ce("div", "item");
+      var dot = ce("span", "dot");
+      dot.style.background = e.game.accent;
+      item.appendChild(dot);
+      var label = document.createTextNode(
+        e.game.title + " " + e.count + (e.game.slug === leaderSlug ? "" : "")
+      );
+      item.appendChild(label);
+      if (e.game.slug === leaderSlug) {
+        var crown = ce("span", "crown");
+        crown.textContent = "\u{1F451}";
+        crown.setAttribute("aria-label", "leader");
+        item.appendChild(crown);
+      }
+      legend.appendChild(item);
+    });
+  }
+
+  function setRefreshState(loading) {
+    var btn = qs("#refreshBtn");
+    var label = qs("#refreshLabel");
+    if (loading) {
+      btn.classList.add("spinning");
+      label.textContent = "Refreshing";
+    } else {
+      btn.classList.remove("spinning");
+      label.textContent = "Refresh";
+    }
+  }
+
+  function fetchTallies(isManual) {
+    var now = Date.now();
+    if (isManual && now - lastFetch < COOLDOWN_MS) {
+      return;
+    }
+    lastFetch = now;
+    setRefreshState(true);
+
+    var url = "https://api.github.com/repos/" + CONFIG.owner + "/" + CONFIG.repo +
+      "/issues?state=open&per_page=10";
+
+    fetch(url, {
+      headers: { "Accept": "application/vnd.github+json" }
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("GitHub API responded with " + res.status);
+        return res.json();
+      })
+      .then(function (issues) {
+        if (!Array.isArray(issues)) throw new Error("Unexpected response shape");
+        var byNumber = {};
+        issues.forEach(function (issue) {
+          if (issue && typeof issue.number === "number") {
+            var reactions = issue.reactions || {};
+            byNumber[issue.number] = typeof reactions["+1"] === "number" ? reactions["+1"] : 0;
+          }
+        });
+        CONFIG.games.forEach(function (game) {
+          if (Object.prototype.hasOwnProperty.call(byNumber, game.issue)) {
+            latestCounts[game.slug] = byNumber[game.issue];
+          }
+        });
+        renderCounts();
+        renderStandings();
+      })
+      .catch(function () {
+        // Graceful fallback. Keep whatever we have (or ~), hide standings if nothing resolved.
+        renderCounts();
+        renderStandings();
+      })
+      .then(function () {
+        setRefreshState(false);
+      });
+  }
+
+  qs("#refreshBtn").addEventListener("click", function () {
+    fetchTallies(true);
+  });
+
+  // Initial render (all tildes) then kick off the one fetch.
+  renderCounts();
+  renderStandings();
+  fetchTallies(false);
+
+  /* =========================================================
+     DRIFTING FEATHER DELIGHT
+     ========================================================= */
+
+  function featherSVG(color) {
+    return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M20 3C13 3 6 9 5 16c-.3 2 .5 4 2 5 1-2 2-3 3-3.5-1 1.5-1.3 3-1 4.5 2-.3 3.5-1.3 4.5-3-1 1.5-1 3-.5 4 1.5-.5 3-2 4-4C19 15 21 9 20 3z" ' +
+      'fill="' + color + '" opacity="0.9"/>' +
+      '<path d="M6 21C10 15 15 9 20 3" stroke="rgba(0,0,0,0.25)" stroke-width="0.8"/>' +
+      "</svg>";
+  }
+
+  var featherColors = ["#7c6cff", "#ffb347", "#2dd4bf", "#e6e0d0"];
+
+  function spawnFeather() {
+    if (prefersReducedMotion) return;
+    var f = ce("div", "feather");
+    var color = featherColors[Math.floor(Math.random() * featherColors.length)];
+    f.innerHTML = featherSVG(color);
+    var startX = Math.random() * (window.innerWidth - 30);
+    f.style.left = startX + "px";
+    document.body.appendChild(f);
+
+    var duration = 9000 + Math.random() * 6000;
+    var driftAmount = 60 + Math.random() * 80;
+    var rotateAmount = (Math.random() > 0.5 ? 1 : -1) * (120 + Math.random() * 180);
+    var startTime = null;
+    var endY = window.innerHeight + 60;
+
+    function step(ts) {
+      if (startTime === null) startTime = ts;
+      var elapsed = ts - startTime;
+      var p = clamp(elapsed / duration, 0, 1);
+      var y = lerp(-40, endY, p);
+      var x = startX + Math.sin(p * Math.PI * 3) * driftAmount;
+      var rot = lerp(0, rotateAmount, p);
+      f.style.transform = "translate(" + x + "px," + y + "px) rotate(" + rot + "deg)";
+      if (p < 1) {
+        requestAnimationFrame(step);
+      } else {
+        f.remove();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function scheduleFeathers() {
+    if (prefersReducedMotion) return;
+    var delay = 14000 + Math.random() * 18000;
+    setTimeout(function () {
+      spawnFeather();
+      scheduleFeathers();
+    }, delay);
+  }
+  scheduleFeathers();
+
+})();
+</script>
+
+</body>
+</html>
