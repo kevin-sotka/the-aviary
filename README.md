@@ -2,13 +2,13 @@
 
 Three bird games. One favorite. You decide.
 
-**Visit:** https://OWNER_PLACEHOLDER.github.io/the-aviary/
+**Visit:** https://kevin-sotka.github.io/the-aviary/
 
 | Game | One line | Play |
 |---|---|---|
-| [Murmuration](https://github.com/OWNER_PLACEHOLDER/murmuration) | Paint the dusk sky with a starling flock | https://OWNER_PLACEHOLDER.github.io/murmuration/ |
-| [Dawn Chorus](https://github.com/OWNER_PLACEHOLDER/dawn-chorus) | Echo birdsong, wake a watercolor forest | https://OWNER_PLACEHOLDER.github.io/dawn-chorus/ |
-| [Halcyon](https://github.com/OWNER_PLACEHOLDER/halcyon) | The kingfisher's refraction-perfect dive | https://OWNER_PLACEHOLDER.github.io/halcyon/ |
+| [Murmuration](https://github.com/kevin-sotka/murmuration) | Paint the dusk sky with a starling flock | https://kevin-sotka.github.io/murmuration/ |
+| [Dawn Chorus](https://github.com/kevin-sotka/dawn-chorus) | Echo birdsong, wake a watercolor forest | https://kevin-sotka.github.io/dawn-chorus/ |
+| [Halcyon](https://github.com/kevin-sotka/halcyon) | The kingfisher's refraction-perfect dive | https://kevin-sotka.github.io/halcyon/ |
 
 ## Voting
 Each game has a pinned issue in this repo. Vote by adding a 👍 reaction to the game's issue (one click, needs a GitHub login). The hub page reads the tallies live from the GitHub API and crowns the leader.
